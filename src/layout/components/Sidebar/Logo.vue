@@ -1,14 +1,14 @@
 <template>
   <div :class="{'collapse': props.collapse}" class="sidebar-logo-container">
     <transition name="sidebarLogoFade">
-      <router-link to="/" v-if="props.collapse">
+      <!-- <router-link to="/" v-if="props.collapse"> -->
         <img class="sidebar-logo" src="@/assets/images/logo-wismilak.png" v-if="showLogo" />
         <h1 class="sidebar-title" v-else>{{ title }}</h1>
-      </router-link>
-      <router-link to="/" v-else>
+      <!-- </router-link> -->
+      <!-- <router-link to="/" v-else>
         <img class="sidebar-logo" src="@/assets/images/logo-wismilak.png" v-if="showLogo" />
         <h1 class="sidebar-title">{{ title }}</h1>
-      </router-link>
+      </router-link> -->
     </transition>
   </div>
 </template>

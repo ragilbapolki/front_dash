@@ -40,11 +40,10 @@ function filterAsyncRoutes(routes, permissions) {
       tmp.children = filterAsyncRoutes(tmp.children, permissions)
       console.log('   Children after filter:', tmp.children.length)
 
-      // ✅ FIX: Update redirect ke first accessible child
+      // Update redirect ke first accessible child
       if (tmp.children.length > 0 && tmp.redirect) {
         const firstChild = tmp.children[0]
         if (firstChild.path) {
-          // Handle nested path
           const childPath = firstChild.path.startsWith('/') ? firstChild.path : firstChild.path
           tmp.redirect = tmp.path + '/' + childPath
           console.log(`   🔄 Updated redirect to: ${tmp.redirect}`)
@@ -95,23 +94,36 @@ function addRoutes(routes) {
     }
   })
 
-  // ⚠️ PENTING: 404 catch-all harus di akhir setelah semua routes
-  console.log('\n   📍 Adding 404 catch-all route')
+  // ✅ PENTING: Jangan tambahkan 404 catch-all di sini!
+  // Akan ditambahkan di akhir setelah semua proses selesai
+
+  console.log('\n📋 ===== ROUTER STATUS (Before 404) =====')
+  console.log('   Total registered routes:', router.getRoutes().length)
+  console.log('================================\n')
+}
+
+/**
+ * ✅ NEW: Tambahkan 404 catch-all route di akhir
+ */
+function add404Route() {
+  console.log('\n🚫 ===== ADDING 404 CATCH-ALL ROUTE =====')
+
+  // Hapus 404 catch-all yang mungkin sudah ada
+  const existingCatchAll = router.getRoutes().find(r => r.path.includes('pathMatch'))
+  if (existingCatchAll) {
+    console.log('   Removing existing catch-all route')
+    router.removeRoute(existingCatchAll.name)
+  }
+
   router.addRoute({
     path: '/:pathMatch(.*)*',
     redirect: '/404',
     hidden: true
   })
 
-  console.log('\n📋 ===== ROUTER STATUS =====')
-  console.log('   Total registered routes:', router.getRoutes().length)
-  console.log('   All routes:')
-  router.getRoutes().forEach(r => {
-    if (!r.path.includes('pathMatch')) {
-      console.log('      -', r.path, r.name ? `(${r.name})` : '')
-    }
-  })
-  console.log('================================\n')
+  console.log('   ✅ 404 catch-all route added')
+  console.log('   Total routes now:', router.getRoutes().length)
+  console.log('=====================================\n')
 }
 
 /**
@@ -151,18 +163,12 @@ router.beforeEach(async (to, from, next) => {
     ? `${to.meta.title} - WISMILAK Knowledge Base`
     : 'WISMILAK Knowledge Base'
 
-  // ❌ CRITICAL: Jika navigasi ke 404 tapi routes belum loaded, tunggu
-  if (to.path === '/404' && !ctx.routesLoaded && keycloak.authenticated) {
-    console.warn('⚠️ Intercepting 404 navigation - routes not loaded yet')
-    // Biarkan proses continue untuk load routes
-  }
-
   // Cek Keycloak authenticated
   if (!keycloak.authenticated) {
     console.log('   User not authenticated')
 
     // Kalau halaman public, boleh akses
-    if (isPublicRoute(to.path) && to.path !== '/') {
+    if (isPublicRoute(to.path)) {
       console.log('   ✅ Public route - allowing access')
       next()
       NProgress.done()
@@ -182,7 +188,7 @@ router.beforeEach(async (to, from, next) => {
 
   // User sudah login Keycloak
   try {
-    // Cek apakah sudah punya user info dan routes sudah di-load
+    // ===== LOAD USER DATA & ROUTES (HANYA SEKALI) =====
     if (!ctx.userInfo || !ctx.userInfo.permissions || !ctx.routesLoaded) {
       console.log('\n🔄 ===== LOADING USER DATA & ROUTES =====')
 
@@ -209,7 +215,7 @@ router.beforeEach(async (to, from, next) => {
         console.log('   -', route.path, `(${route.children?.length || 0} children)`)
       })
 
-      // Tambahkan routes ke router
+      // Tambahkan routes ke router (TANPA 404 catch-all)
       addRoutes(accessibleRoutes)
 
       // Simpan ke store
@@ -218,10 +224,11 @@ router.beforeEach(async (to, from, next) => {
 
       console.log('✅ Routes loaded and saved to store')
 
-      // ===== HANDLE NAVIGATION TARGET =====
+      add404Route()
+
       let targetPath = to.path
 
-      // 1. Handle root/admin paths - redirect ke default route
+      // 1. Handle root/admin paths
       if (to.path === '/' || to.path === '/admin' || to.path === '/admin/dashboard') {
         targetPath = userData.default_route || '/admin/keycloak-mappings/list'
         console.log('\n🔄 Root path detected, redirecting to:', targetPath)
@@ -231,39 +238,35 @@ router.beforeEach(async (to, from, next) => {
         return
       }
 
-      // 2. Handle 404 navigation - redirect ke first accessible route
-      if (to.path === '/404' || to.path.includes('404')) {
-        console.log('\n⚠️ 404 path detected after loading routes')
+      // 2. Handle jika original path adalah 404
+      if (to.path === '/404' || to.matched.length === 0) {
+        console.log('\n⚠️ Invalid path or 404, redirecting to first accessible route')
 
         const firstRoute = accessibleRoutes[0]
         if (firstRoute?.children?.[0]) {
           targetPath = firstRoute.path + '/' + firstRoute.children[0].path
-          console.log('   Redirecting to first accessible route:', targetPath)
         } else if (firstRoute?.path) {
           targetPath = firstRoute.path
-          console.log('   Redirecting to first route:', targetPath)
         } else {
           targetPath = '/'
-          console.log('   No accessible routes, redirecting to home')
         }
 
+        console.log('   🔄 Redirecting to:', targetPath)
         next({ path: targetPath, replace: true })
         NProgress.done()
         return
       }
 
-      // 3. Verify target route exists
+      // 3. Verify target route exists setelah routes loaded
       const resolved = router.resolve(targetPath)
       const routeExists = resolved.matched.length > 0
 
       console.log('\n🎯 Verifying target route:', targetPath)
       console.log('   Route exists:', routeExists)
-      console.log('   Matched routes:', resolved.matched.length)
 
       if (!routeExists) {
         console.warn('   ⚠️ Target route NOT FOUND:', targetPath)
 
-        // Fallback ke first accessible route
         const firstRoute = accessibleRoutes[0]
         if (firstRoute?.children?.[0]) {
           const fallbackPath = firstRoute.path + '/' + firstRoute.children[0].path
@@ -277,9 +280,9 @@ router.beforeEach(async (to, from, next) => {
         return
       }
 
-      // 4. Re-navigate dengan replace untuk apply new routes
-      console.log('   ✅ Target route valid, re-navigating...')
-      next({ ...to, replace: true })
+      // 4. Navigate to target with replace
+      console.log('   ✅ Target route valid, navigating to:', targetPath)
+      next({ path: targetPath, replace: true })
       NProgress.done()
       return
     }
@@ -304,14 +307,13 @@ router.beforeEach(async (to, from, next) => {
       }
     }
 
-    console.log('   ✅ Permission check passed')
+    console.log('   ✅ Permission check passed, allowing navigation')
     next()
 
   } catch (error) {
     console.error('\n❌ ===== PERMISSION ERROR =====')
     console.error('   Error:', error.message)
     console.error('   Details:', error.response?.data)
-    console.error('   Stack:', error.stack)
 
     // Tampilkan error message
     const errorMessage = error.response?.data?.message || error.message || 'Gagal memverifikasi user'

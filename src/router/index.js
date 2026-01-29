@@ -28,10 +28,10 @@ import {
   Management,
   LocationFilled,
   Link,
-  Shop
+  Shop,
+  Goods
 } from '@element-plus/icons-vue'
 
-// Icon mapping - Tambahkan icon baru
 export const iconMap = {
   DataAnalysis,
   DataLine,
@@ -50,7 +50,8 @@ export const iconMap = {
   Reading,
   Avatar,
   Postcard,
-  Management
+  Management,
+  Goods
 }
 
 // Static routes (tidak perlu permission)
@@ -252,12 +253,55 @@ export const asyncRoutes = [
     ]
   },
   {
+    path: '/dashboard/ppic',
+    component: Layout,
+    redirect: '/dashboard/ppic/plug-wrap',
+    meta: {
+      title: 'PPIC',
+      icon: Goods,
+      requiresAuth: true,
+      permission: 'view.dashboard.ppic'
+    },
+    children: [
+      {
+        path: 'plug-wrap',
+        name: 'PPICPlugWrap',
+        component: () => import('@/views/dashboard/ppic/PlugWrap.vue'),
+        meta: {
+          title: 'Plug Wrap',
+          icon: Goods,
+          requiresAuth: true,
+          permission: 'view.ppic.plug_wrap',
+          breadcrumb: [
+            { title: 'PPIC', to: '/dashboard/ppic/plug-wrap' },
+            { title: 'Plug Wrap' }
+          ]
+        }
+      },
+      {
+        path: 'ciggar-making',
+        name: 'PPICCiggarMaking',
+        component: () => import('@/views/dashboard/ppic/PlugWrap.vue'), // Pakai component yang sama dulu
+        meta: {
+          title: 'Ciggar Making',
+          icon: Goods,
+          requiresAuth: true,
+          permission: 'view.ppic.ciggar_making', // Ganti permission baru
+          breadcrumb: [
+            { title: 'PPIC', to: '/dashboard/ppic' },
+            { title: 'Ciggar Making' }
+          ]
+        }
+      }
+    ]
+  },
+  {
     path: '/admin/categories',
     component: Layout,
     redirect: '/admin/categories/list',
     meta: {
       title: 'Categories',
-      icon: 'Grid', // 📱 Icon grid untuk categories
+      icon: 'Grid',
       requiresAuth: true,
       permission: 'view.categories'
     },
@@ -268,7 +312,7 @@ export const asyncRoutes = [
         component: () => import('@/views/admin/category/index.vue'),
         meta: {
           title: 'Kategori',
-          icon: 'FolderOpened', // 📂 Icon folder terbuka
+          icon: 'FolderOpened',
           permission: 'view.categories',
           breadcrumb: [
             { title: 'Categories', to: '/admin/categories/list' },

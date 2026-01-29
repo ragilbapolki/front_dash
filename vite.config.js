@@ -13,14 +13,10 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 
-// ElementPlus components
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-// ElementPlus svg icon
 import Icons from 'unplugin-icons/vite'
 import IconsResolver from 'unplugin-icons/resolver'
-// SvgSpritemap
 import VitePluginSvgSpritemap from '@spiriit/vite-plugin-svg-spritemap'
-// markdown
 import mdPlugin from 'vite-plugin-markdown'
 
 export default defineConfig(({
@@ -34,18 +30,13 @@ export default defineConfig(({
       mdPlugin.plugin({
         mode: [mdPlugin.Mode.VUE]
       }),
-      // svg 雪碧图
       VitePluginSvgSpritemap('./src/icons/svg/*.svg', {
-        // injectSvgOnDev: true,
       }),
       vue(),
       vueDevTools(),
       AutoImport({
         resolvers: [
-          // 自动导入 element plus 相关函数 如ElMessage
           ElementPlusResolver(),
-          // Auto import icon components
-          // 自动导入图标组件
           IconsResolver({
             prefix: 'Icon'
           })

@@ -2,9 +2,11 @@
 import Keycloak from 'keycloak-js'
 
 const keycloak = new Keycloak({
-  url: "http://localhost:8080",
-  realm: "company-apps",
-  clientId: "dashboard-app",
-})
+  url: "https://ssowim.wim-bms.com",
+  realm: "wismilak-portal",
+  clientId: "bi.wismilak.com",
+  pkceMethod: null,
+
+});
 
 export default keycloak

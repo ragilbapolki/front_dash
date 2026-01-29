@@ -403,28 +403,32 @@ const getCellColorStyle = (prop, value, row) => {
   const style = {}
 
   if (prop === 'growthLW' || prop === 'growthYTD') {
-    if (num > 0) {
+    // num sudah dalam bentuk persentase (misal 15 untuk 15%)
+    // Konversi ke desimal untuk perbandingan
+    const decimal = num / 100
+
+    if (decimal > 0.2) {
+      // > 20% = Hijau Tua
       style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
       style.color = 'white'
-      style.fontWeight = '600'
-      style.padding = '8px 12px'
-      style.borderRadius = '8px'
-      style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.3)'
-    } else if (num === 0) {
-      style.background = 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
+    } else if (decimal >= 0) {
+      // 0% sampai 20% = Kuning Cerah (lebih terang, tidak mirip oranye)
+      style.background = 'linear-gradient(135deg, #fde047 0%, #facc15 100%)'
       style.color = '#1f2937'
-      style.fontWeight = '600'
-      style.padding = '8px 12px'
-      style.borderRadius = '8px'
-      style.boxShadow = '0 2px 8px rgba(251, 191, 36, 0.3)'
+    } else if (decimal >= -0.1) {
+      // -10% sampai 0% = Oranye
+      style.background = 'linear-gradient(135deg, #fb923c 0%, #f97316 100%)'
+      style.color = 'white'
     } else {
+      // < -10% = Merah
       style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
       style.color = 'white'
-      style.fontWeight = '600'
-      style.padding = '8px 12px'
-      style.borderRadius = '8px'
-      style.boxShadow = '0 2px 8px rgba(239, 68, 68, 0.3)'
     }
+
+    style.fontWeight = '600'
+    style.padding = '8px 12px'
+    style.borderRadius = '8px'
+    style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)'
   }
 
   if (prop === 'achYTD') {
@@ -785,7 +789,7 @@ const downloadExcel = () => {
     XLSX.utils.book_append_sheet(wb, ws, `Pareto ${dashboardTitle.value}`)
 
     XLSX.writeFile(wb, `Sales_Pareto_${dashboardTitle.value}_${year}_W${week}.xlsx`)
-    ElMessage.success(' Excel berhasil didownload!')
+    ElMessage.success('✅ Excel berhasil didownload!')
   } catch (err) {
     console.error(err)
     ElMessage.error('❌ Gagal download Excel')
@@ -839,9 +843,15 @@ const downloadTableImage = async () => {
                 let style = 'border: 1px solid #ddd; padding: 8px; text-align: right;'
 
                 if ((prop === 'growthLW' || prop === 'growthYTD') && !isNaN(num)) {
-                  if (num > 0) {
+                  const decimal = num / 100
+
+                  if (decimal > 0.2) {
                     style += 'background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; font-weight: 600; border-radius: 6px;'
-                  } else if (num < 0) {
+                  } else if (decimal >= 0) {
+                    style += 'background: linear-gradient(135deg, #fde047 0%, #facc15 100%); color: #1f2937; font-weight: 600; border-radius: 6px;'
+                  } else if (decimal >= -0.1) {
+                    style += 'background: linear-gradient(135deg, #fb923c 0%, #f97316 100%); color: white; font-weight: 600; border-radius: 6px;'
+                  } else {
                     style += 'background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; font-weight: 600; border-radius: 6px;'
                   }
                 }
@@ -913,7 +923,7 @@ const downloadTableImage = async () => {
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
 
-      ElMessage.success(' Screenshot berhasil didownload!')
+      ElMessage.success('✅ Screenshot berhasil didownload!')
     })
 
   } catch (error) {

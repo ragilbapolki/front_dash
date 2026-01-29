@@ -13,10 +13,24 @@
           <!-- Period Filters -->
           <div class="filter-inline-group">
             <span class="filter-group-label">📅 Period:</span>
-            <el-select v-model="filters.selectedYear" @change="onYearChange" placeholder="Year" size="default" style="width: 100px">
+            <el-select
+              v-model="filters.selectedYear"
+              @change="onYearChange"
+              placeholder="Year"
+              size="default"
+              style="width: 100px"
+              filterable
+            >
               <el-option v-for="year in availableYears" :key="year" :value="year" :label="year" />
             </el-select>
-            <el-select v-model="filters.selectedCycle" @change="onCycleChange" placeholder="Cycle" size="default" style="width: 110px">
+            <el-select
+              v-model="filters.selectedCycle"
+              @change="onCycleChange"
+              placeholder="Cycle"
+              size="default"
+              style="width: 110px"
+              filterable
+            >
               <el-option v-for="cycle in availableCycles" :key="cycle" :value="cycle" :label="`Cycle ${cycle}`" />
             </el-select>
           </div>
@@ -26,11 +40,11 @@
           <!-- Product Filters -->
           <div class="filter-inline-group">
             <span class="filter-group-label">🎯 Filters:</span>
-            <el-select v-model="filters.selectedFamily" @change="onFamilyChange" placeholder="All Family" size="default" style="width: 130px" :disabled="!fullDataCache">
+            <el-select v-model="filters.selectedFamily" @change="onFamilyChange" placeholder="All Family" size="default" style="width: 130px" :disabled="!fullDataCache" filterable>
               <el-option value="All" label="All Family" />
               <el-option v-for="family in familyList" :key="family" :value="family" :label="family" />
             </el-select>
-            <el-select v-model="filters.selectedTobacco" @change="onTobaccoChange" placeholder="All Tobacco" size="default" style="width: 140px" :disabled="!fullDataCache">
+            <el-select v-model="filters.selectedTobacco" @change="onTobaccoChange" placeholder="All Tobacco" size="default" style="width: 140px" :disabled="!fullDataCache" filterable>
               <el-option value="All" label="All Tobacco" />
               <el-option v-for="tobacco in tobaccoList" :key="tobacco" :value="tobacco" :label="tobacco" />
             </el-select>
@@ -177,10 +191,10 @@
               <div class="gauges-header">
               </div>
               <div class="gauge-card">
-                <div ref="achGaugeChart" style="width: 100%; height: 220px;"></div>
+                <div ref="achGaugeChart" style="width: 100%; height: 190px;"></div>
               </div>
               <div class="gauge-card">
-                <div ref="growthGaugeChart" style="width: 100%; height: 220px;"></div>
+                <div ref="growthGaugeChart" style="width: 100%; height: 190px;"></div>
               </div>
             </div>
           </div>
@@ -548,11 +562,9 @@ const processData = (results) => {
 const processRegionalData = (data) => {
   const regionalMap = {}
 
-  // 1️⃣ Aggregate data per regional
   data.forEach(item => {
     const regional = item.regional
 
-    // ⛔ skip data tanpa regional
     if (!regional) return
 
     if (!regionalMap[regional]) {
@@ -568,17 +580,14 @@ const processRegionalData = (data) => {
     regionalMap[regional].ytd_ae += Number(item.ytd_ae) || 0
   })
 
-  // 2️⃣ Hitung total achievement (untuk contribution)
   const totalAchievement = Object.values(regionalMap).reduce((sum, r) => {
     return sum + (r.ytd_ae > 0 ? (r.sales_ytd / r.ytd_ae) * 100 : 0)
   }, 0)
 
-  // 3️⃣ Bentuk regionalData + FILTER R? DI SINI
   regionalData.value = Object.entries(regionalMap)
     .map(([regional, values]) => {
       const regMatch = regional.match(/\d+/)
 
-      // ⛔ BUANG regional yang tidak punya angka (R?)
       if (!regMatch) return null
 
       const regNum = regMatch[0]
@@ -605,11 +614,8 @@ const processRegionalData = (data) => {
         ...values
       }
     })
-    .filter(Boolean) // 🔥 HAPUS null (R?)
-    .sort((a, b) => {
-      const order = { R1: 1, R2: 2, R6: 3, R3: 4, R4: 5, R5: 6 }
-      return (order[a.name] || 99) - (order[b.name] || 99)
-    })
+    .filter(Boolean)
+    .sort((a, b) => b.contribution - a.contribution)
 }
 
 const processTableData = (data, last) => {
@@ -762,7 +768,6 @@ const tableRowClassName = ({ row }) => {
   return row.brand === 'TOTAL' ? 'total-row' : ''
 }
 
-// Color functions for Achievement and Growth
 const getAchievementColor = (value) => {
   const val = Number(value)
   console.log(val)
@@ -922,11 +927,9 @@ const drawEChartsGauge = (container, value, type) => {
   chart.setOption(option)
 }
 
-// Default Indonesia GeoJSON
 const indonesiaGeoJSON = {
   type: 'FeatureCollection',
   features: [
-    // 1️⃣ SUMATRA
     {
       type: 'Feature',
       properties: { name: 'R1', RegKey: 1 },
@@ -942,7 +945,6 @@ const indonesiaGeoJSON = {
       }
     },
 
-    // 2️⃣ JAKARTA
     {
       type: 'Feature',
       properties: { name: 'R2', RegKey: 2 },
@@ -958,7 +960,6 @@ const indonesiaGeoJSON = {
       }
     },
 
-    // 3️⃣ JAWA TENGAH
     {
       type: 'Feature',
       properties: { name: 'R3', RegKey: 3 },
@@ -974,7 +975,6 @@ const indonesiaGeoJSON = {
       }
     },
 
-    // 4️⃣ JAWA TIMUR
     {
       type: 'Feature',
       properties: { name: 'R4', RegKey: 4 },
@@ -990,7 +990,6 @@ const indonesiaGeoJSON = {
       }
     },
 
-    // 5️⃣ KALIMANTAN
     {
       type: 'Feature',
       properties: { name: 'R5', RegKey: 5 },
@@ -1006,7 +1005,6 @@ const indonesiaGeoJSON = {
       }
     },
 
-    // 6️⃣ JAWA BARAT
     {
       type: 'Feature',
       properties: { name: 'R6', RegKey: 6 },
@@ -1048,7 +1046,7 @@ const initMap = () => {
   }
 
   mapInstance = L.map(mapContainer.value, {
-    center: [-2.0, 118.5],
+    center: [-2.0, 116.4],
     zoom: 4.6,
     minZoom: 4,
     maxZoom: 6,
@@ -1345,14 +1343,17 @@ onMounted(() => {
 
 .map-gauge-grid {
   display: grid;
-  grid-template-columns: 3fr 1fr;
+  grid-template-columns: 3fr 0.9fr;
   gap: 1.5rem;
+  align-items: start;
 }
 
 .map-container-wrapper {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  align-self: start;
+  height: fit-content;
 }
 
 .map-container {
@@ -1360,6 +1361,7 @@ onMounted(() => {
   border-radius: 8px;
   overflow: hidden;
   border: 2px solid #e5e7eb;
+  margin: 0;
 }
 
 .leaflet-map {
@@ -1395,7 +1397,7 @@ onMounted(() => {
 .legend-block {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
 .legend-title {
@@ -1427,17 +1429,20 @@ onMounted(() => {
 .gauges-container {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  /* gap: 1rem; */
+  margin-top: 0;
+  height: fit-content;
 }
 
 .gauge-card {
   background: #f9fafb;
   border-radius: 8px;
-  padding: 0.5rem;
+  padding: 0.25rem;
   display: flex;
   justify-content: center;
   align-items: center;
   border: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
 }
 
 .table-section {
